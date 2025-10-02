@@ -1,8 +1,14 @@
-from semantic_text_similarity.models import WebBertSimilarity
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
-# texts = [text1, text2]
-# vec = TfidfVectorizer().fit_transform(texts)  # sparse matrix
-# sim_matrix = cosine_similarity(vec[0], vec[1])
-# print("TF-IDF cosine:", float(sim_matrix))
+
+from Metrics import CosineSimilarity, GPT4AllSim, WebBertSim
+
+
+text1 = "I love dogs"
+text2 = "I really really really like dogs"
+
+print("TF-IDF cosine:", CosineSimilarity(text1, text2))
+print("WebBert similarity:", WebBertSim(text1, text2))
+
+test1 = "This function takes in a list of numbers and returns the sum of all the even numbers in the list."
+test2 = "This function takes in a list of numbers and returns the sum of all the odd numbers in the list."
+print("GPT-4 similarity:", GPT4AllSim(test1, test2))
