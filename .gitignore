@@ -1,2 +1,3 @@
 llms-for-code-analysis-main/
 .env
+__pycache__/
