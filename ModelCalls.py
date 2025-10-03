@@ -38,10 +38,13 @@ def GPT35TurboAnalysis(filepath):
     messages=[
         {
             "role": "user",
-            "content": f"“Analyze the code and tell me what it does. Code: {filepath}"
+            "content": f"Analyze the code and tell me what it does. Code: {filepath}"
         }
     ]
     )
     return response.choices[0].message.content
+# For manual checking, we first make a code analysis API call to GPT-4. 
+# We will manually check the explanation generated and if it is correct, we will mark that explanation as the GRM for evaluating the correctness of explanations generated from other models.
+# The similarity between the explanations are generated using similarity models like GPT4Similarity, Bert similarity score, and cosine similarity score
 
 
