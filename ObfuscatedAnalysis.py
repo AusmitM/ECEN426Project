@@ -20,23 +20,14 @@ import os
 import os
 
 from Metrics import CosineSimilarity, WebBertSim, GPT4AllSim
+from ModelCalls import GPT35TurboAnalysis
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def GPT35TurboObfuscatedAnalysis(filepath):
-    response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {
-            "role": "user",
-            "content": f"Analyze the code and tell me what it does. Code: {filepath}"
-        }
-    ]
-    )
-    return response.choices[0].message.content
 
-def GPT41ObfuscatedAnalysis(filepath):
+
+def GPT41Analysis(filepath):
     response = client.chat.completions.create(
     model="gpt-4.1",
     messages=[
@@ -54,11 +45,11 @@ def GPT41ObfuscatedAnalysis(filepath):
 #  Array of Dead Code Injected Files,
 #  Array of String Splitted Files,
 #  Array of Wobfuscated Files]
-def cosineSim(allObfuscationFiles):
+def metricsCalculator(allObfuscatedFiles):
     cosineSimArray = []
     bertSimArray = []
     GPTSimArray = []
-    for obfuscationMethod in allObfuscationFiles:
+    for obfuscationMethod in allObfuscatedFiles:
         gpt4CosSum = 0
         gpt35CosSum = 0
         gpt4BertSum = 0
@@ -66,8 +57,8 @@ def cosineSim(allObfuscationFiles):
         gpt4GPTSum = 0
         gpt35GPTSum = 0
         for currentFilePath in obfuscationMethod:
-            gpt4analysis = GPT41ObfuscatedAnalysis(currentFilePath)
-            gpt35analysis = GPT35TurboObfuscatedAnalysis(currentFilePath)
+            gpt4analysis = GPT41Analysis(currentFilePath)
+            gpt35analysis = GPT35TurboAnalysis(currentFilePath)
             gpt4CosSum += CosineSimilarity(answerText, gpt4analysis)
             gpt35CosSum += CosineSimilarity(answerText, gpt35analysis)
             gpt4BertSum += WebBertSim(answerText, gpt4analysis)
@@ -122,7 +113,6 @@ def GPT41Deobfuscation(filepath):
     )
     return response.choices[0].message.content
 
-# Here we assume the existence of text to be the existence of code generated and vice versa
 # The parameter filepaths should contain all the IOCCC files
 
 def deobfuscationMetrics(filepaths):
