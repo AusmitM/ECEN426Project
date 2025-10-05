@@ -7,6 +7,8 @@ import torch
 from transformers import pipeline
 from huggingface_hub import InferenceClient
 
+from Metrics import CosineSimilarity, GPT4AllSim, WebBertSim
+
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -33,7 +35,7 @@ def GPT4Analysis(prompts, filenames, language):
     elif language == "Python":
         output_folder = "./PythonGPT4OUTPUTS"
 
-        
+
     all_messages = []
     for prompt in prompts:
         all_messages.append({"role": "user", "content": prompt})
@@ -50,7 +52,8 @@ def GPT4Analysis(prompts, filenames, language):
             f.write(response.choices[0].message.content)
 
 # ANALYSIS OF A CODE FILE USING STARCHAT MODEL
-def StarChatAnalysis(prompts):
+def StarChatAnalysis(prompts, explanations):
+
     model_name = "HuggingFaceH4/starchat-beta"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -60,13 +63,28 @@ def StarChatAnalysis(prompts):
         load_in_4bit=True    # quantized 4-bit
     )
     
-    generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
-    result = generator("Explain TCP vs UDP", max_new_tokens=200)
-    print(result[0]['generated_text'])
+    results = []
+
+    for prompt in prompts:
+        generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
+        result = generator(prompt, max_new_tokens=500)
+        results.append(result[0]['generated_text'])
+
+
+    cosine_scores = []
+    bert_scores = []
+    gpt4all_scores = []
+    for result in results:
+        cosine_scores.append(CosineSimilarity(result, explanations))
+        bert_scores.append(WebBertSim(result, explanations))
+        gpt4all_scores.append(GPT4AllSim(result, explanations))
+    return [cosine_scores, bert_scores, gpt4all_scores]
+
+    
     
 
 # ANALYSIS OF A CODE FILE USING GPT-3.5-TURBO
-def GPT35TurboAnalysis(prompts):
+def GPT35TurboAnalysis(prompts, explanations):
     response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
@@ -80,7 +98,7 @@ def GPT35TurboAnalysis(prompts):
 
 
 # ANALYSIS OF A CODE FILE USING LLAMA2
-def Llama2Analysis(prompts):
+def Llama2Analysis(prompts, explanations):
     client = InferenceClient("meta-llama/Llama-2-13b-chat-hf")
     response = client.chat_completion(
         model="meta-llama/Llama-2-13b-chat-hf",
@@ -92,7 +110,7 @@ def Llama2Analysis(prompts):
 
     print(response.choices[0].message["content"])
 # ANALYSIS OF A CODE FILE USING CODELLAMA2
-def CodeLlama2Analysis(prompts):
+def CodeLlama2Analysis(prompts, explanations):
     model_name = "meta-llama/CodeLlama-13b-Instruct-hf"
 
     print("🔹 Loading tokenizer...")
