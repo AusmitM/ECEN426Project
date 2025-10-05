@@ -114,23 +114,33 @@ def GPT35TurboAnalysis(prompts, explanations):
 # ANALYSIS OF A CODE FILE USING LLAMA2
 def Llama2Analysis(prompts, explanations):
     client = InferenceClient("meta-llama/Llama-2-13b-chat-hf")
-    response = client.chat_completion(
-        model="meta-llama/Llama-2-13b-chat-hf",
-        messages=[
-            {"role": "system", "content": "You are a helpful scientific assistant."}
-        ],
+    outputs = []
+    for prompt in prompts:
+        response = client.chat_completion(
+            model="meta-llama/Llama-2-13b-chat-hf",
+            messages=[
+                {"role": "system", "content": "You are a helpful scientific assistant."},
+                {"role": "user", "content": prompt}
+            ],
         max_tokens=200
-    )
+        )
+        outputs.append(response.choices[0].message["content"])
+    cosine_scores = []
+    bert_scores = []
+    gpt4all_scores = []
+    i = 0
+    for result in outputs:
+        cosine_scores.append(CosineSimilarity(result, explanations[i]))
+        bert_scores.append(WebBertSim(result, explanations[i]))
+        gpt4all_scores.append(GPT4AllSim(result, explanations[i]))
+        i+=1
+    return [cosine_scores, bert_scores, gpt4all_scores]    
 
-    print(response.choices[0].message["content"])
+
 # ANALYSIS OF A CODE FILE USING CODELLAMA2
 def CodeLlama2Analysis(prompts, explanations):
     model_name = "meta-llama/CodeLlama-13b-Instruct-hf"
-
-    print("🔹 Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-    print("🔹 Loading 4-bit quantized model (this may take a minute)...")
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto",          # Automatically assign layers across GPU/CPU
@@ -139,7 +149,6 @@ def CodeLlama2Analysis(prompts, explanations):
         low_cpu_mem_usage=True,     # Reduces RAM pressure
     )
 
-    print("✅ Model loaded successfully!")
 
     # Create a text generation pipeline
     generator = pipeline(
@@ -151,24 +160,30 @@ def CodeLlama2Analysis(prompts, explanations):
     )
 
     # Example prompt
-    prompt = """\
-    You are an expert Python programmer.
-    Write a function that takes a list of integers and returns a new list \
-    containing only the even numbers, sorted in descending order.
-    """
+    outputs = []
+    for prompt in prompts:
+        outputs = generator(
+            prompt,
+            max_new_tokens=200,
+            temperature=0.7,
+            do_sample=True,
+            top_p=0.9,
+            repetition_penalty=1.1,
+        )
+        outputs.append(outputs[0]["generated_text"])
+        
+    cosine_scores = []
+    bert_scores = []
+    gpt4all_scores = []
+    i = 0
+    for result in outputs:
+        cosine_scores.append(CosineSimilarity(result, explanations[i]))
+        bert_scores.append(WebBertSim(result, explanations[i]))
+        gpt4all_scores.append(GPT4AllSim(result, explanations[i]))
+        i+=1
+    return [cosine_scores, bert_scores, gpt4all_scores]    
 
-    print("🧠 Generating text...")
-    outputs = generator(
-        prompt,
-        max_new_tokens=200,
-        temperature=0.7,
-        do_sample=True,
-        top_p=0.9,
-        repetition_penalty=1.1,
-    )
 
-    print("\n📝 Generated Output:\n")
-    print(outputs[0]["generated_text"])
 
 
 # For manual checking, we first make a code analysis API call to GPT-4. 
