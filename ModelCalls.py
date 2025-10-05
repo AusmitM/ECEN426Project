@@ -35,21 +35,21 @@ def GPT4Analysis(prompts, filenames, language):
     elif language == "Python":
         output_folder = "./PythonGPT4OUTPUTS"
 
-
-    all_messages = []
+    outputs = []
     for prompt in prompts:
-        all_messages.append({"role": "user", "content": prompt})
-
-    response = client.chat.completions.create(
-    model="gpt-4.1",
-    messages=all_messages
-    )
+        response = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[{"role": "user", "content": prompt}]
+        )
+        outputs.append(response.choices[0].message.content)
 
     # Save each response to a separate file
+    i = 0
     for filename in enumerate(filenames):
         output_path = os.path.join(output_folder, f"{filename}_GPT4_analysis.txt")
         with open(output_path, "w", encoding="utf-8") as f:
-            f.write(response.choices[0].message.content)
+            f.write(outputs[i])
+        i += 1
 
 # ANALYSIS OF A CODE FILE USING STARCHAT MODEL
 def StarChatAnalysis(prompts, explanations):
@@ -65,6 +65,7 @@ def StarChatAnalysis(prompts, explanations):
     
     results = []
 
+
     for prompt in prompts:
         generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
         result = generator(prompt, max_new_tokens=500)
@@ -74,10 +75,12 @@ def StarChatAnalysis(prompts, explanations):
     cosine_scores = []
     bert_scores = []
     gpt4all_scores = []
+    i = 0
     for result in results:
-        cosine_scores.append(CosineSimilarity(result, explanations))
-        bert_scores.append(WebBertSim(result, explanations))
-        gpt4all_scores.append(GPT4AllSim(result, explanations))
+        cosine_scores.append(CosineSimilarity(result, explanations[i]))
+        bert_scores.append(WebBertSim(result, explanations[i]))
+        gpt4all_scores.append(GPT4AllSim(result, explanations[i]))
+        i+=1
     return [cosine_scores, bert_scores, gpt4all_scores]
 
     
@@ -85,16 +88,27 @@ def StarChatAnalysis(prompts, explanations):
 
 # ANALYSIS OF A CODE FILE USING GPT-3.5-TURBO
 def GPT35TurboAnalysis(prompts, explanations):
-    response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {
-            "role": "user",
-            "content": f"Analyze the code and tell me what it does. Code: {filepath}"
-        }
-    ]
-    )
-    return response.choices[0].message.content
+    outputs = []
+    for prompt in prompts:
+        response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}]
+        )
+        outputs.append(response.choices[0].message.content)
+    
+    
+
+    cosine_scores = []
+    bert_scores = []
+    gpt4all_scores = []
+    i = 0
+    for result in outputs:
+        cosine_scores.append(CosineSimilarity(result, explanations[i]))
+        bert_scores.append(WebBertSim(result, explanations[i]))
+        gpt4all_scores.append(GPT4AllSim(result, explanations[i]))
+        i+=1
+    return [cosine_scores, bert_scores, gpt4all_scores]
+
 
 
 # ANALYSIS OF A CODE FILE USING LLAMA2
