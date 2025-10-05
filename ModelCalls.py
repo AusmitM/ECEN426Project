@@ -2,8 +2,10 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
+from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from transformers import pipeline
+from huggingface_hub import InferenceClient
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -23,12 +25,18 @@ def GPT4Similarity(text1, text2):
 
 # ANALYSIS OF A CODE FILE USING STARCHAT MODEL
 def StarChatAnalysis():
-    pipe = pipeline("text-generation", model="HuggingFaceH4/starchat-beta", torch_dtype=torch.bfloat16, device_map="auto")
-    prompt_template = "<|system|>\n<|end|>\n<|user|>\n{query}<|end|>\n<|assistant|>"
-    prompt = prompt_template.format(query="How do I sort a list in Python?")
-    # We use a special <|end|> token with ID 49155 to denote ends of a turn
-    outputs = pipe(prompt, max_new_tokens=256, do_sample=True, temperature=0.2, top_k=50, top_p=0.95, eos_token_id=49155)
-    print(outputs[0]['generated_text'])
+    model_name = "HuggingFaceH4/starchat-beta"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        device_map="auto",   # automatically split layers across GPUs
+        load_in_4bit=True    # quantized 4-bit
+    )
+    
+    generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
+    result = generator("Explain TCP vs UDP", max_new_tokens=200)
+    print(result[0]['generated_text'])
     
 
 # ANALYSIS OF A CODE FILE USING GPT-3.5-TURBO
@@ -43,6 +51,68 @@ def GPT35TurboAnalysis(filepath):
     ]
     )
     return response.choices[0].message.content
+
+
+# ANALYSIS OF A CODE FILE USING LLAMA2
+def Llama2Analysis(filepath):
+    client = InferenceClient("meta-llama/Llama-2-13b-chat-hf")
+    response = client.chat_completion(
+        model="meta-llama/Llama-2-13b-chat-hf",
+        messages=[
+            {"role": "system", "content": "You are a helpful scientific assistant."}
+        ],
+        max_tokens=200
+    )
+
+    print(response.choices[0].message["content"])
+# ANALYSIS OF A CODE FILE USING CODELLAMA2
+def CodeLlama2Analysis(filepath):
+    model_name = "meta-llama/CodeLlama-13b-Instruct-hf"
+
+    print("🔹 Loading tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    print("🔹 Loading 4-bit quantized model (this may take a minute)...")
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        device_map="auto",          # Automatically assign layers across GPU/CPU
+        load_in_4bit=True,          # Quantize to 4-bit
+        torch_dtype=torch.float16,  # Mixed precision
+        low_cpu_mem_usage=True,     # Reduces RAM pressure
+    )
+
+    print("✅ Model loaded successfully!")
+
+    # Create a text generation pipeline
+    generator = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        torch_dtype=torch.float16,
+        device_map="auto",
+    )
+
+    # Example prompt
+    prompt = """\
+    You are an expert Python programmer.
+    Write a function that takes a list of integers and returns a new list \
+    containing only the even numbers, sorted in descending order.
+    """
+
+    print("🧠 Generating text...")
+    outputs = generator(
+        prompt,
+        max_new_tokens=200,
+        temperature=0.7,
+        do_sample=True,
+        top_p=0.9,
+        repetition_penalty=1.1,
+    )
+
+    print("\n📝 Generated Output:\n")
+    print(outputs[0]["generated_text"])
+
+
 # For manual checking, we first make a code analysis API call to GPT-4. 
 # We will manually check the explanation generated and if it is correct, we will mark that explanation as the GRM for evaluating the correctness of explanations generated from other models.
 # The similarity between the explanations are generated using similarity models like GPT4Similarity, Bert similarity score, and cosine similarity score
