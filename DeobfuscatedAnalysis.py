@@ -44,10 +44,10 @@ for filename in os.listdir(C_FOLDER_PATH):
     prompt = f"Analyze and tell me what this file does. Code: {filename}\n\n{content}"
     prompts.append(prompt)
 
-    CStarChatMetrics = StarChatAnalysis(prompts)
-    CGPT35TurboMetrics = GPT35TurboAnalysis(prompts)
-    CLlama2Metrics = Llama2Analysis(prompts)
-    CCodeLlama2Metrics = CodeLlama2Analysis(prompts)
+CStarChatMetrics = StarChatAnalysis(prompts)
+CGPT35TurboMetrics = GPT35TurboAnalysis(prompts)
+CLlama2Metrics = Llama2Analysis(prompts)
+CCodeLlama2Metrics = CodeLlama2Analysis(prompts)
 
 
 # Getting JavaScript Metrics
@@ -66,10 +66,10 @@ for filename in os.listdir(JAVASCRIPT_FOLDER_PATH):
     prompt = f"Analyze and tell me what this file does. Code: {filename}\n\n{content}"
     prompts.append(prompt)
 
-    JStarChatMetrics = StarChatAnalysis(prompts)
-    JGPT35TurboMetrics = GPT35TurboAnalysis(prompts)
-    JLlama2Metrics = Llama2Analysis(prompts)
-    JCodeLlama2Metrics = CodeLlama2Analysis(prompts)
+JStarChatMetrics = StarChatAnalysis(prompts)
+JGPT35TurboMetrics = GPT35TurboAnalysis(prompts)
+JLlama2Metrics = Llama2Analysis(prompts)
+JCodeLlama2Metrics = CodeLlama2Analysis(prompts)
 
 
 # Getting Python Metrics
@@ -88,10 +88,10 @@ for filename in os.listdir(PYTHON_FOLDER_PATH):
     prompt = f"Analyze and tell me what this file does. Code: {filename}\n\n{content}"
     prompts.append(prompt)
 
-    PStarChatMetrics = StarChatAnalysis(prompts)
-    PGPT35TurboMetrics = GPT35TurboAnalysis(prompts)
-    PLlama2Metrics = Llama2Analysis(prompts)
-    PCodeLlama2Metrics = CodeLlama2Analysis(prompts)
+PStarChatMetrics = StarChatAnalysis(prompts)
+PGPT35TurboMetrics = GPT35TurboAnalysis(prompts)
+PLlama2Metrics = Llama2Analysis(prompts)
+PCodeLlama2Metrics = CodeLlama2Analysis(prompts)
 
 
 # Assuming the outputs of each metrics list is in the order of [Cosine, Bert, GPT4All]
