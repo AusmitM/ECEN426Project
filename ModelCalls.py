@@ -23,8 +23,21 @@ def GPT4Similarity(text1, text2):
     )
     return response.choices[0].message.content
 
+# SIMILARITY BETWEEN TWO TEXTS USING GPT-4
+def GPT4Analysis(prompts):
+    response = client.chat.completions.create(
+    model="gpt-4.1",
+    messages=[
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+    )
+    return response.choices[0].message.content
+
 # ANALYSIS OF A CODE FILE USING STARCHAT MODEL
-def StarChatAnalysis():
+def StarChatAnalysis(prompts):
     model_name = "HuggingFaceH4/starchat-beta"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -40,7 +53,7 @@ def StarChatAnalysis():
     
 
 # ANALYSIS OF A CODE FILE USING GPT-3.5-TURBO
-def GPT35TurboAnalysis(filepath):
+def GPT35TurboAnalysis(prompts):
     response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
@@ -54,7 +67,7 @@ def GPT35TurboAnalysis(filepath):
 
 
 # ANALYSIS OF A CODE FILE USING LLAMA2
-def Llama2Analysis(filepath):
+def Llama2Analysis(prompts):
     client = InferenceClient("meta-llama/Llama-2-13b-chat-hf")
     response = client.chat_completion(
         model="meta-llama/Llama-2-13b-chat-hf",
@@ -66,7 +79,7 @@ def Llama2Analysis(filepath):
 
     print(response.choices[0].message["content"])
 # ANALYSIS OF A CODE FILE USING CODELLAMA2
-def CodeLlama2Analysis(filepath):
+def CodeLlama2Analysis(prompts):
     model_name = "meta-llama/CodeLlama-13b-Instruct-hf"
 
     print("🔹 Loading tokenizer...")
