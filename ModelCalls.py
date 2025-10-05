@@ -24,17 +24,30 @@ def GPT4Similarity(text1, text2):
     return response.choices[0].message.content
 
 # SIMILARITY BETWEEN TWO TEXTS USING GPT-4
-def GPT4Analysis(prompts):
+def GPT4Analysis(prompts, filenames, language):
+    output_folder = "./GPT4OUTPUTS"
+    if language == "C":
+        output_folder = "./CGPT4OUTPUTS"
+    elif language == "JavaScript":
+        output_folder = "./JavaScriptGPT4OUTPUTS"
+    elif language == "Python":
+        output_folder = "./PythonGPT4OUTPUTS"
+
+        
+    all_messages = []
+    for prompt in prompts:
+        all_messages.append({"role": "user", "content": prompt})
+
     response = client.chat.completions.create(
     model="gpt-4.1",
-    messages=[
-        {
-            "role": "user",
-            "content": prompt
-        }
-    ]
+    messages=all_messages
     )
-    return response.choices[0].message.content
+
+    # Save each response to a separate file
+    for filename in enumerate(filenames):
+        output_path = os.path.join(output_folder, f"{filename}_GPT4_analysis.txt")
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(response.choices[0].message.content)
 
 # ANALYSIS OF A CODE FILE USING STARCHAT MODEL
 def StarChatAnalysis(prompts):
