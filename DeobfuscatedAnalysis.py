@@ -28,7 +28,7 @@ OverallGPT35TurboMetrics = []
 OverallLlama2Metrics = []
 OverallCodeLlama2Metrics = []
 
-
+load_dotenv()
 # Getting C Metrics
 for filename in os.listdir(C_FOLDER_PATH):
     file_path = os.path.join(C_FOLDER_PATH, filename)
