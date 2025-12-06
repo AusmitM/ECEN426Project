@@ -1,10 +1,10 @@
 /**
- * Obfuscation Pipeline (4 Separate Modes)
- * ---------------------------------------
- * 1. default/
- * 2. deadcode/
- * 3. cff/           control-flow-flattening ONLY
- * 4. split_strings/ string splitting ONLY
+ * Obfuscation Pipeline (Default + 3 variants)
+ * ------------------------------------------
+ * 1. default/        -> DE        (Default preset)
+ * 2. deadcode/       -> DE + DI   (dead code injection)
+ * 3. cff/            -> DE + CFF  (control flow flattening)
+ * 4. split_strings/  -> DE + SS   (string splitting)
  */
 
 const fs = require('fs');
@@ -14,50 +14,66 @@ const JavaScriptObfuscator = require('javascript-obfuscator');
 // ----------------------------
 // CONFIG
 // ----------------------------
-const INPUT_DIR = './dataset';   // put your JS files here
-const OUTPUT_DIR = './output';   // obfuscated files go here
+const INPUT_DIR = './dataset';   // put your original JS files here
+const OUTPUT_DIR = './output';   // obfuscated files will be written here
 
 // ----------------------------
-// OBFUSCATION OPTIONS
+// BASE OPTIONS = "Default preset, High performance"
+// (copied from the README default preset)
 // ----------------------------
+const baseDefaultOptions = {
+    compact: true,
+    controlFlowFlattening: false,
+    deadCodeInjection: false,
+    debugProtection: false,
+    debugProtectionInterval: 0,
+    disableConsoleOutput: false,
+    identifierNamesGenerator: 'hexadecimal',
+    log: false,
+    numbersToExpressions: false,
+    renameGlobals: false,
+    selfDefending: false,
+    simplify: true,
+    splitStrings: false,
+    stringArray: true,
+    stringArrayCallsTransform: false,
+    stringArrayCallsTransformThreshold: 0.5,
+    stringArrayEncoding: [],
+    stringArrayIndexShift: true,
+    stringArrayRotate: true,
+    stringArrayShuffle: true,
+    stringArrayWrappersCount: 1,
+    stringArrayWrappersChainedCalls: true,
+    stringArrayWrappersParametersMaxCount: 2,
+    stringArrayWrappersType: 'variable',
+    stringArrayThreshold: 0.75,
+    unicodeEscapeSequence: false
+};
 
-// 1. DEFAULT
+// 1. Default obfuscation (DE)
 const defaultOptions = {
-    compact: true,
-    controlFlowFlattening: false,
-    deadCodeInjection: false,
-    splitStrings: false,
-    stringArray: true,
+    ...baseDefaultOptions
 };
 
-// 2. DEAD CODE INJECTION ONLY
+// 2. DE + Dead Code Injection (DI)
 const deadCodeOptions = {
-    compact: true,
+    ...baseDefaultOptions,
     deadCodeInjection: true,
-    deadCodeInjectionThreshold: 1,
-    controlFlowFlattening: false,
-    splitStrings: false,
-    stringArray: true,
+    deadCodeInjectionThreshold: 0.4
 };
 
-// 3. CONTROL FLOW FLATTENING ONLY
+// 3. DE + Control Flow Flattening (CFF)
 const cffOptions = {
-    compact: true,
+    ...baseDefaultOptions,
     controlFlowFlattening: true,
-    controlFlowFlatteningThreshold: 1,
-    deadCodeInjection: false,
-    splitStrings: false,
-    stringArray: true,
+    controlFlowFlatteningThreshold: 0.75
 };
 
-// 4. STRING SPLITTING ONLY
+// 4. DE + String Splitting (SS)
 const splitStringOptions = {
-    compact: true,
+    ...baseDefaultOptions,
     splitStrings: true,
-    splitStringsChunkLength: 5,
-    controlFlowFlattening: false,
-    deadCodeInjection: false,
-    stringArray: true,
+    splitStringsChunkLength: 10
 };
 
 // ----------------------------
@@ -104,25 +120,25 @@ function obfuscateAll() {
 
         console.log(`→ Obfuscating ${relative}`);
 
-        // --- default ---
+        // --- DE (default) ---
         writeFileSafely(
             path.join(OUTPUT_DIR, 'default', relative),
             JavaScriptObfuscator.obfuscate(sourceCode, defaultOptions).getObfuscatedCode()
         );
 
-        // --- deadcode only ---
+        // --- DE + DI (dead code injection) ---
         writeFileSafely(
             path.join(OUTPUT_DIR, 'deadcode', relative),
             JavaScriptObfuscator.obfuscate(sourceCode, deadCodeOptions).getObfuscatedCode()
         );
 
-        // --- control flow flattening only ---
+        // --- DE + CFF (control flow flattening) ---
         writeFileSafely(
             path.join(OUTPUT_DIR, 'cff', relative),
             JavaScriptObfuscator.obfuscate(sourceCode, cffOptions).getObfuscatedCode()
         );
 
-        // --- string splitting only ---
+        // --- DE + SS (string splitting) ---
         writeFileSafely(
             path.join(OUTPUT_DIR, 'split_strings', relative),
             JavaScriptObfuscator.obfuscate(sourceCode, splitStringOptions).getObfuscatedCode()
