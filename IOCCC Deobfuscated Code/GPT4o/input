@@ -1,0 +1,2640 @@
+[H[2J[H[2J#include <stdio.h>               
+#include <sys/ioctl.h>                  
+#include <unistd.h>                     
+#include <time.h>                       
+                                        
+#define write_to_stdout write           
+extern long write_to_stdout(int, const void*, size_t);
+extern double O[];                      
+                                        
+int term_rows, term_cols;               
+int col_offset, row_offset;             
+int state = 0;                          
+int v = 0;                              
+                                        
+// Terminal manipulation helpers        
+void write_str(const char* str, long len) {
+    write_to_stdout(1, str, len);       
+}                                       
+                                        
+unsigned char rand_bit_cycle() {        
+    v ^= 8;                             
+    return ++v % 8;                     
+}                                       
+                                        
+int get_char_at_offset(int index) {     
+    return ((char*)&O[index])[rand_bit_cycle()];
+}                                       
+                                        
+void set_fg_color(int color_index) {    
+    char* base = (char*)(O + 14);       
+    write_str(base + color_index * 2, 2);
+}                                       
+                                        
+void set_bg_color(int color_index) {    
+    char* base = (char*)(O + 16);       
+    write_str(base + color_index * 3, 3);
+}                                       
+                                        
+int digit_from_double(int base_index, int offset) {
+    return ((int)(O[base_index]) / *((char*)(O + 18) + offset)) % 10 + '0';
+}                                       
+                                        
+void seed_random() {                    
+    char buf[16];                       
+    gettimeofday((struct timeval*)buf, NULL);
+    v = buf[0];                         
+}                                       
+                                        
+void get_terminal_size() {              
+    struct winsize ws;                  
+    ioctl(1, TIOCGWINSZ, &ws);          
+    term_cols = ws.ws_col;              
+    term_rows = ws.ws_row;              
+    col_offset = term_rows / 2 - 12;    
+    row_offset = term_cols - 4;         
+}                                       
+                                        
+void esc() { write_str("\033[", 2); }   
+void bold() { esc(); write_str("1m", 2); }
+void reset() { esc(); write_str("0m", 2); }
+void switch_alt_screen() { esc(); write_str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+                                        
+void move_cursor(int row, int col) {    
+    char pos[6] = {                     
+        digit_from_double(row, 2),      
+        digit_from_double(row, 1),      
+        digit_from_double(row, 0),      
+        ';',                            
+        digit_from_double(col, 2),      
+        digit_from_double(col, 1),      
+    };                                  
+    write_str(pos, 6);                  
+    write_str("H", 1);                  
+}                                       
+                                        
+void apply_color(int color) {           
+    esc();                              
+    set_fg_color(color);                
+    write_str("m", 1);                  
+}                                       
+[H  ued eimo e  ) l    t c  e crl  n     
+# [u d wOw _  l  ;   gt s o    (__      
+# i  d,e   _,hs     }r er_e n  o ] i    
+# inl t      * {       e a((h      )  N 
+  inde;s, t  r    c i e  t (+ii b    , d
+#  n   e l  l         a c  e c tn       
+e d m  0 s1a  e    _}ciss o    _  *     oid*, size_t);
+e xe_ a  t t c       w hr_e l    a      
+ vxotrr n  (   xd   v  r a(u[      l    
+i  t lsm( i    a ))   e  t ( bt         
+i n  a tt_       n    a o    O  i       
+i n i= _   bx i )  2}cis( m {           
+i nri    ;   t]e     w h ri)            
+  nwtm  r    e )*x  v  r (  t {        d
+/  r rvr  e r  x ;)   g n  (           d
+v /  i   fO   _      dt [ d  s&        d) {
+  o d  + ) s_o+ )  3}r ifa1   ; w   )  d
+}n n= a    & Oie  n    e0fd i ;  ; -2 ; 
+    uec t t  r )*xh i e  o]_w sl    e2)d
+u  e ^ _hia r  x ; i  a  [ eIssw  2   _ 
+  n  t ( c n  _    c}ctsm  Gw  w ,1  t  
+    _ o    h_o+ d    g=hi iswW l ("     
+}  eu e l  + Oii/   vv e rnsr.0  r;"    
+   e t(c  t  r ) nN     swTtr.e 3( (    
+i    t sbia b         e s, t et\_ l)    
+  n t  r c nn a       r el   e{tec      ycle()];
+}  sr o    h  d     }scgewt s  i  )o    
+ c htee l  + i  )    irt ste;     )     
+v  r a(c  e    l    vtro s ()_  i )2    
+  o  i sbbb      *   tle   ce)(,   1    
+    t  r O li        cwe{ wc (( r )0    ;
+}  sr m    [  m      r o {  tr(er )    d
+ ) htei _    t         oa {i   er  2    
+v  r a on             s  )l dn(e   1    
+  o  i (  r{          o r_ md{( c       
+    i d  s          } ee[ smd_ ec       ;
+}  iu 1 o  tw{  1     wbtu6m _ e       
+ ) e gdn6     s-  ; v  rts_ d_         c
+i    t][a z  &    ) v osti_md          ct offset) {
+  n e  f;ss  ;    _)v a  i_m _         car*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H   e   v  hdni     v    (      )      l
+  #n_dr rtni      avcrt lt e        2   
+ }         a a            > n t     e ut
+u [ am        )    om( twt r          e 
+e u    ;er_r      ist l(tuol ,      _#J 
+du e           rs _titni     ; c    mir 
+ ed t0e r)  }     mi     i   s d rp     oid*, size_t);
+eJ l     * xs  o   _                 it 
+irw ts)t x  c i )o_m6            i   .  
+m O  1*]xhc;g r{la d_     e v    loiotc*
+otwlcaxe  } ert     r      v     o"(    
+        ;iciw   d{          ov(   l td {
+ec_     ) t testni                 o    
+     ev  es  ltr(     t  d rvop(ridts   
+          mas e(e          iws t"1tho   
+) l           ;e        o  o_   n       ) {
+      rwgo     r e    }v   _te    ti    
+l        ]G[ie   r    N lo rf_          
+  ; w_(hn_w  { )1 c     {_w]_[ 1 ,      
+     }   w e t        g  rl_of      r ue
+   ahc r   I)e   2 c} u e {          }  
+    riti(swsoc)   nin      d o       v a
+tugc_s ) l s         =tt rn  d    i  te(
+  t es{   ,w   dv e s s er (  v  i  rn (
+c         1    }    ri= r         iic((h
+ eselo               I  ()    #  mre(   ycle()];
+           2}   r)ft e =or(     e  rha( 
+e(oc     et    s  ;]0mre2 o   r t     + 
+         2    crahs[ w  ,o1   nrlo roni 
+c( t     )  s    tsa _er    }         O 
+r+ na_   d _rnhmoe  N _e ,) l  nm       ;
+li            t ni zi3o0 ) [d     ;8eor)
+ O(   d   nuote   ;  ) s   dulns _      
+  _  *  d     e  _  ;     } ed(;ued )6  
+nr_     /          &/" )c eet2lu      xN
+      ni ute rl[       ;  tirw ts 4n e  ;
+      w  e          )   upa r      xhc(#
+ x  e tnrc(^hc    _     t s;__lcyxedd   
+   #  mr      +m t)                ; n it offset) {
+ (  xe irtc_ n    v)2   hcdth_        }nar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H   le   _     n_   v    (      )      a
+   e d   wIw   i    crt lt e        2  m
+ }    e   ) r s           > n t     e u 
+  #  ts)  ee)  z;;h m( twt r          e 
+e n  0  m{  f  i  c t l(tuol ,      _#J 
+ u_  e ta  tt ;3  d itni     ; c    mir 
+ ed * l s)    ]o )t      i   s d rp     oid*, size_t);
+ Jr  rtt 12 e 00  h                  it 
+vr  x)ree     m  s_ 6            i   .  
+  r s (s(cc =Ir)}   _     e v    loiotc 
+ tt    te } o e     r      v     o"(   )
+h n  } n    r 2[e           ov(   l td  
+dci o  i  u (( ddd                 o    
+n  r         )o (u    t  d rvop(ridts   
+i  s      eg    ;l         iws t"1tho   
+      t  {      un      o  o_   n      o) {
+   __    _{     es ;  }v   _te    ti   m
+   t m   w r  r d }   N lo rf_         (
+   i id  ] le# ; _nn    {_w]_[ 1 ,      
+  at     _ _  t8)     g  rl_of      r ut
+v vn  r  [ o   e6 (i} u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r     =tt rn  d    i  te 
+  t   p s   ae )  x s s er (  v  i  rn r
+     i(  ,  (( l  e#ri= r         iic(( 
+(el   r t     +i_    I  ()    #  mre(   ycle()];
+  t   i "        Oi  e =or(     e  rha( 
+ ( ;  d 1 }   e  (rm0mre2 o   r t     + 
+  e  st t  r  ( * tr w  ,o1   nrlo roni 
+ ( c  s h    eo   c  _er    }         O 
+ +   d oo  u sc   _ N _e ,) l  nm       ;
+ i         e e  dd  i3o0 ) [d     ;8eor 
+)O   r       l    n  ) s   dulns _      
+     p   ;a  o      ;     } ed(;ued )6  
+ r mi     h         /" )c eet2lu      xe
+   it  e wc      n +   ;  tirw ts 4n e  ;
+   r   c _    e  u m)   upa r      xhc(u
+ x2 e  _ (r}2 t eov     t s;__lcyxedd   
+   dJ e  h  }  t t)t               ; n [t offset) {
+l( u  v  n       e2)2   hcdth_        } ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H m_ e   ]     d   tv    (      )       
+     d    o_  ed    crt lt e        2  t
+ }  r  i l   +            > n t     e us
+   et*   e _Oi  ;nh m( twt r          e)
+l e t   e#  i_(i  c t l(tuol ,      _#J 
+eu t l ug e   r3  d itni     ; c    mir 
+ eda1 )  ;6t  mo )t      i   s d rp    eoid*, size_t);
+ J  2so(   8e 00  h                  ite
+ r   ) ( _()  m  s_ 6            i   . )
+_  te (  ni =Ir)}   _     e v    loiotc 
+ twt  ud;n} o e     r      v     o"(    
+  I 0  dl   r 2[e           ov(   l td z
+ cw;0  d  u (( ddd                 o   ;
+   3 ]       )o (u    t  d rvop(ridts  ;
+     o    eg    ;l         iws t"1tho  h
+n   h t  {      un      o  o_   n       ) {
+_ id )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _ n    {_w]_[ 1 ,      
+   t     _ _  t8) l   g  rl_of      r ut
+v  n  r  [ o   e6 ([} u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     dri= r         iic(( 
+(el   r t     +i )vJ I  ()    #  mre(   ycle()];
+  t   i "        O   e =or(     e  rha( 
+ ( ;  d 1 }        e0mre2 o   r t     + 
+  e  st t  rt(( p n  w  ,o1   nrlo roni 
+ ( c  s h w  e       _er    }         O 
+ +   d oo vu l;  r hN _e ,) l  nm       ;
+ i         t        i3o0 ) [d     ;8eor 
+)O   r    v i   ;    ) s   dulns _      
+     pn   n   d a  };     } ed(;ued )6  
+ r mi   ii a"r      /" )c eet2lu      xe
+   it  d   t  1e       ;  tirw ts 4n e  ;
+   r  rc ir  t  o et)   upa r      xhc( 
+ x2    isd    }e  2     t s;__lcyxedd   
+    J            l)t               ; n #t offset) {
+a( ur  o  [       2)2   hcdth_        } ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H t  e   ]         tv    (      )      t
+   t2d    o_     ;  crt lt e        2  *
+m}  sa d l   +  }         > n t     e u 
+_  lo1   e _Oi  ; h m( twt r          e 
+    (   e#     i  c t l(tuol ,      _#J 
+eu u ) ug e  ) 3  d itni     ; c    mire
+ edg  )  ;6t veo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(   [ =Ir)}   _     e v    loiotci
+ t   tud;n}lo e     r      v     o"(    
+  o 0  dl   r 2[e           ov(   l td  
+ c_r0  d  u (( ddd                 o   ;
+   3 m       )o (u    t  d rvop(ridts  n
+     o    eg    ;l         iws t"1tho  h
+d e h t  {      un      o  o_   n       ) {
+  dd )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _ n    {_w]_[ 1 ,      
+t  t     _ _  t8) a   g  rl_of      r ut
+v  n  r  [ o   e6 (#} u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae    r s s er (  v  i  rn r
+     i(  ,  ((      ri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        Oo  e =or(     e  rha( 
+ ( ;  d 1 }         0mre2 o   r t     + 
+  e  st t  rt(( p    w  ,o1   nrlo roni 
+ ( c  s h w  e  n [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t        i3o0 ) [d     ;8eor 
+)O   r;     i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t v     ;  tirw ts 4n e );
+   re 3c  r  t      )   upa r      xhc( 
+ x2    w d    } di2     t s;__lcyxedd   
+   eJe];          )l               ; n  t offset) {
+ ( u   0o [     a 2)2   hcdth_        }ear*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H *  e   ]         lv    (      )      o
+   u d    o_        crt lt e        2  1
+t}   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  t (   e#  o  i  c t l(tuol ,      _#J 
+eu2u ) ug e  ) 3  d itni     ; c    mire
+ edg  )  ;6t   o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(   # =Ir)}   _     e v    loiotci
+ t  Jtud;n}ao e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_ 0v d  u (( ddd                 o   ;
+   3 e       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+    h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+  ;i  d  ] le# ; _en    {_w]_[ 1 ,      
+t  t     _ _  t8)     g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0e e =or(     e  rha( 
+ ( ;  d 1 }       o]0mre2 o   r t     + 
+  e  st t  rt(( p  ; w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h;  i3o0 ) [d     ;8eor 
+)O   rn    ti        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  a    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc(_
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ mr          )                ; n  t offset) {
+t( u   0o [     n 2)2   hcdth_        }lar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H 12 e v ]     h    v    (      )      o
+   u d    o_   ;    crt lt e        2   
+*}   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e e)o3  d itni     ; c    mire
+ edg  )  ;6t  ]o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  e  =Ir)}   _     e v    loiotci
+ t  Jtud;n} o e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_ 0  d  u (( ddd                 o   ;
+   3         )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+    h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _ln    {_w]_[ 1 ,      
+l  t     _ _  t8) t   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       om0mre2 o   r t     + 
+  e  st t  rt(( p  r w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    hn  i3o0 ) [d     ;8eor 
+)O   r     ti        ) s   dulns _      
+     p  h;n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t   t  )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ e           )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_   n    crt lt e        2   
+1}   g d l   +            > n t     e u 
+2  )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  mo )t      i   s d rp     oid*, size_t);
+vJ    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  l  =Ir)}   _     e v    loiotci
+ t eJtud;n}to e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 ]       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+  ;d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       oe0mre2 o   r t     + 
+  e  st t  rt(( p    w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r     li   ;    ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t   t  )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ             )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_     ;  crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  eo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 m       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+  nd )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o 0mre2 o   r t     + 
+  e  st t  rt(( p    w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t   l  )   upa r      xhc(2
+ x2ev  _ d    } di2     t s;__lcyxedd   
+   eJ ]o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t   o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 e       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+  ;i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o]0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ mo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  ]o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3         )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       om0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h;n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ eo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  mo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 ]       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       oe0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i   ;    ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ  o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_     ;  crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  eo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 m       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o 0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ ]o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t   o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 e       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+  ;i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o]0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ mo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  ]o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3         )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       om0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h;n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ eo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  mo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 ]       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       oe0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i   ;    ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ  o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_     ;  crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  eo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 m       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o 0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ ]o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t   o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 e       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+  ;i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o]0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ mo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  ]o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3         )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       om0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h;n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ eo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  mo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 ]       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       oe0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i   ;    ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ  o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_     ;  crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  eo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 m       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o 0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ ]o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t   o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 e       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+  ;i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o]0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ mo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  ]o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3         )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       om0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h;n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ eo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  mo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 ]       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       oe0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i   ;    ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ  o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_     ;  crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  eo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 m       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o 0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ ]o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t   o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 e       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+  ;i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o]0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ mo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  ]o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3         )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       om0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h;n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ eo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  mo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 ]       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       oe0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i   ;    ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ  o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_     ;  crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  eo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 m       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o 0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ ]o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t   o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 e       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+  ;i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       o]0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ mo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  ]o )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3         )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       om0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i        ) s   dulns _      
+     p  h;n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ eo          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  
+[H    e   ]     h    v    (      )      o
+   u d    o_        crt lt e        2   
+ }   g d l   +            > n t     e u 
+   )o    e _Oi  ; h m( twt r          e 
+  u (   e#  0  i  c t l(tuol ,      _#J 
+eu u ) ug e  )o3  d itni     ; c    mire
+ edg  )  ;6t  mo )t      i   s d rp     oid*, size_t);
+ J    o(   8eJ00  h                  it_
+ r e8; ( _()  m  s_ 6            i   . O
+]   e6(  )  =Ir)}   _     e v    loiotci
+ t  Jtud;n}oo e     r      v     o"(    
+  o)0  dl   r 2[e           ov(   l td  
+ c_o0  d  u (( ddd                 o   ;
+   3 ]       )o (u    t  d rvop(ridts   
+     o    eg    ;l         iws t"1tho  h
+h   h t  {      un      o  o_   n       ) {
+   d )   _{     es ;  }v   _te    ti   m
+     t   w r  r d }   N lo rf_         (
+   i  d  ] le# ; _)n    {_w]_[ 1 ,      
+   t     _ _  t8) o   g  rl_of      r ut
+v  n  r  [ o   e6 ( } u e {          } w
+  ci  v i  frm o    n      d o       v t
+ ur   o w1  hr r  u  =tt rn  d    i  te 
+  t   p s   ae      s s er (  v  i  rn r
+     i(  ,  ((     eri= r         iic(( 
+(el   r t     +i ) J I  ()    #  mre(   ycle()];
+  t   i "        O0  e =or(     e  rha( 
+ ( ;  d 1 }       oe0mre2 o   r t     + 
+  e  st t  rt(( p  o w  ,o1   nrlo roni 
+ ( c  s h w  e    [  _er    }         O 
+ +   d oo vu l;  r  N _e ,) l  nm       ;
+ i         t    h   i3o0 ) [d     ;8eor 
+)O   r      i   ;    ) s   dulns _      
+     p  h n   d n   ;     } ed(;ued )6  
+ r mi  ; i  "r      /" )c eet2lu      xe
+   it      t  1t  n    ;  tirw ts 4n e  ;
+   r_ 3c  r  t      )   upa r      xhc( 
+ x2e   _ d    } di2     t s;__lcyxedd   
+   eJ  o          )                ; n  t offset) {
+o( u   0o [     n 2)2   hcdth_        })ar*)(O + 18) + offset)) % 10 + '0';
+}n sr  0  Ni ;/ )  2vc mti  6_r         
+ h htei  Wsw s- m  e   ht,_,1   )      f
+v  e an n.sI s "02  v    i_,   o       e
+  o  tTms.mw3  ( 1      ri             e
+     = iIemw_ 3) "      r ( t           ULL);
+    t   =e re0s );       t(i          v 
+}N gu ts=  r e_o         t  ln       t  
+   ttets  t  te ,l   }i o  c1  >        
+v  omr e _  i{ 2,    wi;  l, o          
+  oemc e );s  n1,)   w roc  d    t      
+   e_rw  (e;r  0 )     rr ls. r    ,   T
+   o_r  rr )r o ,)    p  c(t tu i      d
+   o l{ e  er(o2,     c ut h l wt       
+     wl{ n   (o1 )  }etas d  > o    e   
+    c   t{otc(   )   sisil/ d         n 
+}  el sa _o c o     vw emysso t      l i
+   bss6 o_od (o       Jr ne_ t ;;       
+v  rio_r]_ d (       [d ei ; t e rl     
+v os e_[f od         ld2w _ _    ,;s     }
+v o vw_tf_o         }lduetrr_ h  n      ; }
+v;omr  tf_ d        l u   o m* e  )    str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+ )oh o_t  )d)       # eusl   wr         
+v_   a_ f )         #i  e ,    r,       
+  o    tf  6 r      #r n0wt a  t   {_   
+      (t   1         r n s;ut c       cd
+      ( p         v # rn   n(l  l    t  
+       r"n          etl m  u s y  )     
+       r  ot        ecaet a  t   en     
+   ;t l  o)          s=o_ r b    r x2   
+   rt   o  l    c   iv t ssd  t    a  )d
+   r ilo  i1   ,    i m  o   _e   x     
+     i( oth i       ier r  8   nxd;     
+    p  o"l dt t     i ir     ; d 4 e    
+}  a( dr > . r(      w w+a  s o  e )3   
+   s_p/ e    u    n /  r  vf& O r  x  ) 
+v  etcsui o         v e  + * frl  x     
+  or testt_ ;      e g^ _    ) (_d; i   
+    #i i.t d        }vtn( a n  o 6 ec n 
+   2e _m   o t so    r   rc(h o  e )  hd
+}  ueJr t c         u  e ( (+iO r  x (  

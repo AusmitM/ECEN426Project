@@ -1,0 +1,2640 @@
+[H[2J#include <stdio.h>                      
+#include <sys/ioctl.h>                  
+#include <unistd.h>                     
+#include <time.h>                       
+                                        
+#define write_to_stdout write           
+extern long write_to_stdout(int, const void*, size_t);
+extern double O[];                      
+                                        
+int term_rows, term_cols;               
+int col_offset, row_offset;             
+int state = 0;                          
+int v = 0;                              
+                                        
+// Terminal manipulation helpers        
+void write_str(const char* str, long len) {
+    write_to_stdout(1, str, len);       
+}                                       
+                                        
+unsigned char rand_bit_cycle() {        
+    v ^= 8;                             
+    return ++v % 8;                     
+}                                       
+                                        
+int get_char_at_offset(int index) {     
+    return ((char*)&O[index])[rand_bit_cycle()];
+}                                       
+                                        
+void set_fg_color(int color_index) {    
+    char* base = (char*)(O + 14);       
+    write_str(base + color_index * 2, 2);
+}                                       
+                                        
+void set_bg_color(int color_index) {    
+    char* base = (char*)(O + 16);       
+    write_str(base + color_index * 3, 3);
+}                                       
+                                        
+int digit_from_double(int base_index, int offset) {
+    return ((int)(O[base_index]) / *((char*)(O + 18) + offset)) % 10 + '0';
+}                                       
+                                        
+void seed_random() {                    
+    char buf[16];                       
+    gettimeofday((struct timeval*)buf, NULL);
+    v = buf[0];                         
+}                                       
+                                        
+void get_terminal_size() {              
+    struct winsize ws;                  
+    ioctl(1, TIOCGWINSZ, &ws);          
+    term_cols = ws.ws_col;              
+    term_rows = ws.ws_row;              
+    col_offset = term_rows / 2 - 12;    
+    row_offset = term_cols - 4;         
+}                                       
+                                        
+void esc() { write_str("\033[", 2); }   
+void bold() { esc(); write_str("1m", 2); }
+void reset() { esc(); write_str("0m", 2); }
+void switch_alt_screen() { esc(); write_str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+                                        
+void move_cursor(int row, int col) {    
+    char pos[6] = {                     
+        digit_from_double(row, 2),      
+        digit_from_double(row, 1),      
+        digit_from_double(row, 0),      
+        ';',                            
+        digit_from_double(col, 2),      
+        digit_from_double(col, 1),      
+    };                                  
+    write_str(pos, 6);                  
+    write_str("H", 1);                  
+}                                       
+                                        
+void apply_color(int color) {           
+    esc();                              
+    set_fg_color(color);                
+    write_str("m", 1);                  
+}                                       
+[H#cc    i            v  o           Ne ( 
+#cc  l  i         tv ) o         f      
+# ci l   }          v2)o          f    x
+#f iil    }d         e2                *
+ efiil   v            eo ;   }       ,  
+#eeii  n  v             });           , 
+e e ii nn                _)  v      b   oid*, size_t);
+e  d r nn    o          , _  v          
+   xdr nn} c  o         i  2 v;        u
+i  xx   n#}c                2v          
+i   xt e ##c     i         t            
+i  n c te##c                tv )        
+iT nns tt##  i     }           2)       
+ dTnnvv t #f ii     }         ,e2       
+/ dnn  t # e ii    v          " e} ;    
+v   ne tte#e ii  n  v         r   })2   ) {
+   /   ttee   i  n               , _    
+}i o/w tt e  d   n     o      {  i,    ;
+  i o   ti   xd  n }              i  2  
+u        ii  xx    #}               ; 2 
+     g i ii   x  e ##               "t  
+   n v  iii  n   t ##               m t 
+}   nrn   iT nnv t ##  i     }      w  ,
+         / d nn v   #  i               "
+i      s v/  nn  t #   i     v         r
+     g  s v   n  t e#  i                ycle()];
+}d n r   }   /   t ee                  {
+  d n     }i o/  tt e  d                
+v        u    o    i   x     }          
+       t  u e      ii  x     #          
+   o c  t        i ii        #          ;
+}d  ow   }   n n   ii  n     #          
+  d   c   }   n n   i  n v   #          
+v      i i         /   n  v             
+        i i      s v/  ns    #          
+   o c   }          v        e          ;
+}   ow    }d n    l}   /   t e          
+      )  v    n     }  o    t           
+i      i  v        u e       i          t offset) {
+     d  i   _    t  u e      i          ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vvo     {            
+d        v         v  _                 
+   o    i        io  ;)} t              
+n dg      o         o  )2v,i           t
+   niv                 ;) e,      d}  d 
+r n  hcv  N           v  )2 ;i  {  di   
+    i       },v      }         r}o   ) void*, size_t);
+ d }   io    }              2  id     i 
+          (                  2   ccov   
+}    }  n        fu        ;u   n  w v  
+ i    t   } ,  N           }  g         
+  }o   ) i }  (            i    rt    _ 
+  d      3  h         b i         }     
+o   )ov   n  h vx       T  o is    }   i
+ _   )2v   3 n       ,   id/   s     n  
+  o      ,     ic   N   n Tw ov }      i) {
+  c v   2     i  c( e e,n n    v  n   t 
+   } ti      }  ,i      snnt   /   nu   
+             2   ,3 (ee#  vti     n     
+ t   }    }    )  }  f etcv itn /  ne u 
+  }       b   ,   c #iiet  e i n i   }  
+       c    )     c ciii#tt    n      e 
+ u   ni  _  {      ccl i#e  x t  ii     
+              _ }     n  ##dx   ti i o  
+ en        _t   d{w   n  #f  xet   i    
+   l         t     o   nic   d# e n    /ycle()];
+  n                s v    i    #e       
+     l              i     in      vni   
+     }          w      v    #ni      ti 
+i              }            }          s
+  i       v      w           } i        ;
+ in      vdg            }         #     
+         d v)o                   #      
+         do   _v          }o       #    
+          odi;i                         
+    t      ovi  2v                      ;
+     t       iv                v        
+            d voo)2                     
+      t      }do ov                 i   t offset) {
+    d}  c    d   ov  e                  ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv; v  o             
+d        v         vo)   i //           
+   o    i        io       i    i        
+n dg      o          e )  s           dt
+   niv               , 2    n /     t } 
+r n  hcv  N                nen   i i    
+ d  i       },v        ;}r u       n   void*, size_t);
+ } }   io    }      { ri t  u         c 
+          (           }   }   len       
+}    }  n        fu   o        n        
+ c    t   } ,  N       {    t           
+  }o   ) i }  (      d            d }   
+  d      3  h        }   _i         ddd 
+o   )ov   n  h vx     )d  o}     vvvo  i
+     )2v   3 n         id   }     )d v  
+ do      ,     ic    dv    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i       o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t        
+ v}       b   ,   c }nin         w    e 
+       c    )     c  i  3)              
+     ni  _  {      c v                  
+ e            _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }     ws      /ycle()];
+  n                si     h,            
+     l              t      i}   v       
+     }          w     }N (v  ,n    }    
+i              }      ,   x  3in       s
+  i       v      w    v     f c         ;
+  n      vdg                 (          
+         d v)o              ee #i}      
+         do   _v            te f        
+          odi;i         b  sc#d  i  i   
+    t      ovi  2v         nv #   #     ;
+     t       iv     i   i  n   x        
+            d voo)2   }   Ttivee#       
+      t      }do ov         tt te  #    t offset) {
+    d}  c    d   ov v       nin         ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv2}   } t           
+d        v         v; r      t          
+   o    i        io          _          
+n dg      o         v u               dt
+   niv                        /     t } 
+r n  hcv  N          n n         i      
+ d  i       },v     o  e  v        n   void*, size_t);
+ } }   io    }       / n  v)          c 
+          (             ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx    t i  o}     vvvo  i
+     )2v   3 n          d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v               }  
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv     /ycle()];
+  n                si     h,    i   tT  
+     l              t      i}       ttn 
+     }          w     }N (v  ,v      ii 
+i              }      ,   x  3      tvns
+ ni       v      w    v       }c  e ee  ;
+ in      vdg                   h fe  e  
+ n       d v)o                  h    #  
+         do   _v        }       ,c#(#   
+          odi;i              r    i     
+    t      ovi  2v       d)ov  )  }     ;
+     t       iv     i     d)  w2        
+            d voo)2     _   }oso        
+      t      }do ov  ,  i      {        t offset) {
+    d}  c    d   ov v ;   o             ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    e      
+d        v         v2  n     t     e    
+   o    i        io } v      _  t       
+n dg      o                     T n   dt
+   niv                        /  n  t } 
+r n  hcv  N                      i i    
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx    t    o}     vvvo  i
+     )2v   3 n          d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t    , v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)            ; 
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+ ;n        _t   d{w    ch   )2o{     _  
+   l         t     od  v }    dwsv    o/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v      }  
+i              }      ,   x  3      {o s
+  i       v      w    v       }c     s  ;
+  n      vdg                   h     o  
+         d v)o             d    h       
+         do   _v                ,}      
+          odi;i           t  r   ch     
+    t      ovi  2v         ov d)   h    ;
+     t       iv     i o  ni)  w2        
+            d voo)2      i  }oso e f    
+      t      }do ov     i     v{i  e    t offset) {
+    d}  c    d   ov v en  o      e#     ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    s      
+d        v         v         t     o    
+   o    i        io   v      _          
+n dg      o                   o       dt
+   niv                        /_    t } 
+r n  hcv  N                 ,    i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l;n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N     n  d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   et i  o}     vvvo  i
+     )2v   3 n          d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)            e 
+ v   ni  _  {      c v              i n 
+              _ }      h in}   d        
+ en        _t   d{w    ch   )2o{        
+ n l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     e 
+         do   _v                ,}  ee# 
+          odi;i           t  r   ch     
+ e  t      ovi  2v         ov d)   h f  ;
+ #   t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o             ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    se     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }  ,  v   n    n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t_  ddvv 2len       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n          d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h       
+         do   _v          e     ,}      
+          odi;i           t  r   ch     
+    t      ovi  2v         ov d)   h    ;
+     t       iv     i }  ni)  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    s      
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     } n   v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      e   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v ,   o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n          d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)            , 
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+ ,n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov   n i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l,n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w  n   
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
+[H}    dit        i  vv     } t    si     
+d        v         v         t     o    
+   o    i        io   v      _i         
+n dg      o                   o       dt
+   niv                        /     t } 
+r n  hcv  N                      i      
+ d  i       },v     }     v        n   void*, size_t);
+ } }   io    }       /    v)v         c 
+          (         t   ddvv 2l n       
+}    }  n        fu     d o    n        
+ c    t   } ,  N        d}  o           
+  }o   ) i }  (       ni          d }   
+  d      3  h             i         ddd 
+o   )ov   n  h vx   st    o}     vvvo  i
+     )2v   3 n      i   d   }     )d v  
+ do      ,     ic    }v    t      ogoo i) {
+  c v   2     i  c(      } i        voo 
+   } ti      }  ,i    d  o)          )v 
+             2   ,3    r  o   t_     2  
+ o   }    }    )  }       v }  t      v 
+ v}       b   ,   c }nin         w      
+       c    )     c  i  3)              
+ v   ni  _  {      c v              i   
+              _ }      h in}   d        
+  n        _t   d{w    ch   )2o{        
+   l         t     od  v }    dwsv   io/ycle()];
+  n                si     h,    i       
+     l              t      i}           
+ o   }          w     }N (v  ,v     v}  
+i              }      ,   x  3    d {o s
+  i       v      w    v       }c    is  ;
+  n      vdg                   h     o  
+         d v)o             d    h     i 
+         do   _v          s     ,}      
+          odi;i           t  r   ch     
+ i  t      ovi  2v         ov d)   h    ;
+     t       iv     i }  n )  w2        
+            d voo)2      i  }oso        
+      t      }do ov     i     v{i       t offset) {
+    d}  c    d   ov v     o      i      ar*)(O + 18) + offset)) % 10 + '0';
+}d n r   }   o               i          
+  d n     }d  oc   }   n n   in         
+v     )  v      c   }     n        v    
+       t  v      i i         /   s      
+   o c  t   2       i        v    s     ULL);
+    ogn  }   o     }       l            
+}d   vh   }   o)  t }  n    l}       t  
+  d    i i      )  v                  t 
+v       i i      i  v_       u e    o   
+         }  3         _         e       
+   o s    }d n     }   o      g        n
+    oiN  v    n)    }    c   }     n    
+     t    v i   )  v      c             
+     t i    c    t  v2  i    i          
+     c  i    o n      2                 
+}d   r   }    ohn  }   o   t }       l  
+ dd       }d    h   }    )  t         l 
+vdd      v       i i      )  v      n   
+vdd       v         i3  ,      _         }
+v do               }  3         _      g; }
+vd oo        o N  ( }  n     }b         str("?1049h", 6); esc(); write_str("2J", 2); esc(); write_str("H", 1); }
+  doo         o N  v i   )         c    
+v  oo  i            vci   )  v   i      
+    o  ii        i    c ,     {2  i     
+   o c ii}             o n      2       
+    o ;ii }d      ,}     hn  }2      t  
+      ) iv d        }   , h        ){ t 
+      _i vvd       v    (    i   ,  _   
+        ivvd        v         {3  ,     
+         vv  o             ( }  3      b
+          vd oo        o N  ( 3         
+     }   v   oo           N  v i   )    
+     w    v )oo  i      f      ci,     {
+}d   w      2 o  i            x c ,     
+  d         eo ; i }       ,  *    n   2
+v             o);i  }       ,}   , h    
+               _)  v             (,     
+   o e          _i vv        v    (    {
+ c  os             vv                   
+}cc  w            2vv  o      u      ( 3
